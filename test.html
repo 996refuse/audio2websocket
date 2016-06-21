@@ -1,0 +1,54 @@
+<script src="./bower_components/recordrtc/RecordRTC.js"></script>
+<script src="./gumadapter.js"></script>
+<script>
+var audioSend = (function() {
+	return function() {
+
+		var connection = new WebSocket('ws://localhost:8765');
+		// When the connection is open, send some data to the server
+		connection.onopen = function () {
+		  //connection.send('Ping'); // Send the message 'Ping' to the server
+		};
+
+		// Log errors
+		connection.onerror = function (error) {
+		  console.log('WebSocket Error ' + error);
+		};
+
+		// Log messages from the server
+		connection.onmessage = function (e) {
+		  console.log('Server: ' + e.data);
+		};
+
+		function successCallback(mediaStream) {
+		    // RecordRTC usage goes here
+		    var options = {
+		      mimeType: 'audio/wav', // or video/mp4 or audio/ogg
+		      sampleRate: 44100,
+		      bufferSize: 16384
+		    };
+
+			recordRTC = RecordRTC(mediaStream, options);
+			recordRTC.startRecording();
+
+			setTimeout(function(url) {
+				recordRTC.stopRecording(function() {
+			    	var recordedBlob = recordRTC.getBlob();
+			    	//recordRTC.save();
+			    	connection.send(recordedBlob);
+				});
+			}, 1000);	
+		}
+		function errorCallback(error) {
+		    console.log(error);
+		}
+
+		navigator.mediaDevices.getUserMedia({ audio: true }).then(successCallback).catch(errorCallback);
+
+
+
+	}
+}())
+
+audioSend();
+</script>
